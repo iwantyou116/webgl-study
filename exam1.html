@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<style>
+    html,body { padding:0; margin:0; height:100% }
+    img  { margin:0; padding:0; border:0 }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<script type="application/javascript" src="Definer.js"></script>
+<script type="application/javascript" src="World.js"></script>
+<script>
+
+
+
+    (function(totalCount){
+        var cv = document.getElementById('stage');
+
+        var world = new World(cv);
+
+        world.setViewport(true);
+
+        var geo1 = [
+            [-1.0, 1.0, 0.0, -1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 1.0, -1.0, 0.0],
+            [0, 1, 2, 1, 2, 3],
+            [0,0,0,  0,1,0,  1,0,0,  1,1,0]
+        ];
+        var meshes = [], mat1;
+
+        for(var i = 0; i < totalCount; i++) {
+            var r0 = Math.random();
+            var r1 = Math.random();
+            var r2 = Math.random();
+            mat1 = new Material([r0, r1, r2]);
+            meshes.push(new Mesh(geo1[0], geo1[1], geo1[2], mat1));
+            meshes[i].translate(r0 * 2 - 1, r1 * 2 - 1, r2 * 2 - 1);
+            meshes[i].scale(0.1, 0.1, 0.1);
+            world.addMesh(meshes[i]);
+        }
+
+        requestAnimationFrame(function ani(){
+            var mesh, i;
+            for(i = 0; i < totalCount; i++) {
+                mesh = meshes[i];
+                mesh.rotate(mesh.rx, mesh.ry, mesh.rz + Math.random())
+            }
+
+
+            world.render();
+            requestAnimationFrame(ani);
+        });
+
+    }(500));
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+

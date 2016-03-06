@@ -83,7 +83,7 @@ var World = (function() {
 
         return result;
     };
-
+    
     var World = Definer.extend({
         name: 'World',
 
@@ -132,20 +132,30 @@ var World = (function() {
             },
 
             setViewport: function(isAutoSize, w, h) {
-                var resizeFunc;
-
-                if(isAutoSize) {
-                    var canvas, width, height, pixelRatio;
+                var that = this;
+                var resizeFunc = function() {
+                    var width, height, pixelRatio;
                     width = window.innerWidth;
                     height = window.innerHeight;
                     pixelRatio = window.devicePixelRatio;
-                    this.canvas.width = width * pixelRatio;
-                    this.canvas.height = height * pixelRatio;
-                    this.canvas.style.width = width + 'px';
-                    this.canvas.style.height = height + 'px';
-                    this.canvas._autoSize = isAutoSize;
-                    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+                    that.canvas.width = width * pixelRatio;
+                    that.canvas.height = height * pixelRatio;
+                    that.canvas.style.width = width + 'px';
+                    that.canvas.style.height = height + 'px';
+                    that.canvas._autoSize = isAutoSize;
+                    that.gl.viewport(0, 0, that.canvas.width, that.canvas.height);
+                };
+
+                if(isAutoSize) {
+                    resizeFunc();
+
+                    window.addEventListener('resize', resizeFunc);
+                    window.addEventListener('orientationchange', resizeFunc);
                 }else {
+                    this.canvas.width = w;
+                    this.canvas.height = h;
+                    this.canvas.style.width = w + 'px';
+                    this.canvas.style.height = h + 'px';
                     this.gl.viewport(0, 0, w, h);
                 }
             },
@@ -154,6 +164,8 @@ var World = (function() {
                 mesh.parent = this;
                 this.children.push(mesh);
                 this.vertexChanged = true;
+
+                this._addMeshData(mesh);
             },
 
             removeMesh: function(mesh) {
@@ -161,6 +173,30 @@ var World = (function() {
                 mesh.parent = null;
                 this.children.splice(this.children.indexOf(mesh),1);
                 this.vertexChanged = true;
+                
+                this.vertex_data = this.uv_data = this.index_data = 0;
+                this.position_data = this.scale_data = this.rotation_data = this.color_data = 0;
+                
+                this.children.forEach(this._addMeshData, this);
+            },
+
+            _addMeshData: function(mesh) {
+                var i, length, length2;
+
+                mesh.offset = length = this.vertex_data.length / 3;
+                for(i = 0, length2 = mesh.indices.length; i < length2; i++) {
+                    this.index_data.push(mesh.indices[i] + length);
+                }
+                for (i = 0, length2 = mesh.vertices.length ; i < length2 ; i++) {
+                    this.vertex_data.push(mesh.vertices[i]);
+                    this.uv_data.push(mesh.uv[i]);
+                }
+                for(i = 0, length2 = mesh.vertices.length / 3; i < length2; i++){
+                    this.position_data.push(mesh.px, mesh.py, mesh.pz);
+                    this.scale_data.push(mesh.sx, mesh.sy, mesh.sz);
+                    this.rotation_data.push(mesh.rx, mesh.ry, mesh.rz);
+                    this.color_data.push(mesh.material.r, mesh.material.g, mesh.material.b);
+                }
             },
 
             change: function(type, mesh) {
@@ -178,37 +214,7 @@ var World = (function() {
 
                 if(this.vertexChanged){
                     this.vertexChanged = false;
-                    this.vertex_data.length = this.index_data.length = this.position_data.length =
-                        this.scale_data.length = this.rotation_data.length = this.uv_data.length = this.color_data.length = 0;
-                    for(i = 0, len = this.children.length; i < len; i++) {
-                        mesh = this.children[i];
-
-                        /*if(){
-                            gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-                            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, mesh.material.img);
-                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-                            gl.generateMipmap(gl.TEXTURE_2D);
-                        }*/
-
-                        mesh.offset = len3 = this.vertex_data.length / 3;
-                        for(j = 0, len2 = mesh.indices.length; j < len2; j++) {
-                            this.index_data.push(mesh.indices[j] + len3);
-                        }
-                        for (j = 0, len2 = mesh.vertices.length ; j < len2 ; j++) {
-                            this.vertex_data.push(mesh.vertices[j]);
-                            this.uv_data.push(mesh.uv[j]);
-                        }
-                        for(j = 0, len2 = mesh.vertices.length / 3; j < len2; j++){
-                            this.position_data.push(mesh.px, mesh.py, mesh.pz);
-                            this.scale_data.push(mesh.sx, mesh.sy, mesh.sz);
-                            this.rotation_data.push(mesh.rx, mesh.ry, mesh.rz);
-                            this.color_data.push(mesh.material.r, mesh.material.g, mesh.material.b);
-                        }
-                    }
-
-                    this.indexBuffer = gl.createBuffer(gl.ELEMENT_ARRAY_BUFFER);
-                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer(gl.ELEMENT_ARRAY_BUFFER));
                     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.index_data), gl.STATIC_DRAW);
 
                     keys = "vertex,position,scale,color,rotation,uv".split(",");
@@ -255,89 +261,3 @@ var World = (function() {
 
     return World;
 })();
-
-var Mesh = Definer.extend({
-    name: 'Mesh',
-
-    properties: {
-        material: null,
-        vertices: null,
-        indices: null,
-        uv: null,
-        px: 0,
-        py: 0,
-        pz: 0,
-        rx: 0,
-        ry: 0,
-        rz: 0,
-        sx: 1,
-        sy: 1,
-        sz: 1,
-        parent: null
-    },
-
-    initialize: function(vertices, indices, uv, material) {
-        this.material = material;
-        this.vertices = vertices;
-        this.indices = indices;
-        this.uv = uv;
-    },
-
-    methods: {
-        setType: function(type) {
-            this.type = type;
-        },
-
-        translate: function(px, py, pz){
-            this.px = px;
-            this.py = py;
-            this.pz = pz;
-            if(this.parent){
-                this.parent.change(World.POSITION, this);
-            }
-        },
-
-        rotate: function(rx, ry, rz){
-            this.rx = rx;
-            this.ry = ry;
-            this.rz = rz;
-            if(this.parent){
-                this.parent.change(World.ROTATION, this);
-            }
-        },
-
-        scale: function(sx, sy, sz){
-            this.sx = sx;
-            this.sy = sy;
-            this.sz = sz;
-            if(this.parent){
-                this.parent.change(World.SCALE, this);
-            }
-        }
-    }
-});
-
-
-var Material = Definer.extend({
-
-    name: 'Material',
-
-    initialize: function(color) {
-        this.color = color;
-
-        if(typeof this.color == "string"){
-            this.r = parseInt(this.color.substr(1,2), 16)/255;
-            this.g = parseInt(this.color.substr(3,2), 16)/255;
-            this.b = parseInt(this.color.substr(5,2), 16)/255;
-        }else if(this.color instanceof Array){
-            this.r = this.color[0];
-            this.g = this.color[1];
-            this.b = this.color[2];
-        } else {
-            this.r = 1;
-            this.g = 1;
-            this.b = 1;
-        }
-    }
-
-});

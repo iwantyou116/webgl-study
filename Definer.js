@@ -1,10 +1,11 @@
 var Definer = (function() {
-    var Definer, allInstance,
+    var Definer, allInstance, listeners,
         cls, methods, properties, destroy, constants,
         UUID = 0;
 
     Definer = {};
     allInstance = {};
+    listeners = {};
 
     var _property = function (value) {
         var result = {
@@ -49,7 +50,30 @@ var Definer = (function() {
             });
         }
 
-        Object.defineProperty(cls.prototype, 'toString', {value: function() { return this.uuid; }});
+        Object.defineProperty(cls.prototype, 'toString', { value: function() { return this.uuid; }});
+        Object.defineProperty(cls.prototype, 'addEvent', {
+            value: function(type, listener) {
+                listeners[type] = listeners[type] || [];
+                if(listeners[type].indexOf(listener) == -1) {
+                    listeners[type].push({
+                        f: listener,
+                        ctx: this
+                    });
+                }
+            }
+        });
+
+        Object.defineProperty(cls.prototype, 'dispatch', {
+            value: function(type) {
+                if(!listeners[type]) return;
+                var evt = listeners[type], i = evt.length,
+                    params = Array.prototype.slice.call(arguments, 1);
+
+                while (i--) {
+                    evt[i].f.apply(evt[i].ctx, params);
+                }
+            }
+        });
 
         Object.freeze(cls.prototype);
 

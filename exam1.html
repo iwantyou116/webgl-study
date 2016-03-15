@@ -45,14 +45,19 @@
         requestAnimationFrame(function ani(){
             var mesh, i;
             for(i = 0; i < totalCount; i++) {
-                mesh = meshes[i];
-                mesh.rotate(mesh.rx, mesh.ry, mesh.rz + Math.random())
+                if(mesh = meshes[i]) {
+                    mesh.rotate(mesh.rx, mesh.ry, mesh.rz + Math.random())
+                }
             }
 
 
             world.render();
             requestAnimationFrame(ani);
         });
+
+        /*setInterval(function() {
+            world.removeMesh(meshes.pop());
+        }, 1000);*/
 
     }(500));
 </script>

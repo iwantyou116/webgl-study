@@ -19,42 +19,33 @@ var Mesh = Definer.extend({
     },
 
     initialize: function(vertices, indices, uv, material) {
-        this.material = material;
         this.vertices = vertices;
         this.indices = indices;
         this.uv = uv;
+        this.material = material;
     },
 
     methods: {
-        setType: function(type) {
-            this.type = type;
-        },
 
         translate: function(px, py, pz){
             this.px = px;
             this.py = py;
             this.pz = pz;
-            if(this.parent){
-                this.parent.change(World.POSITION, this);
-            }
+            this.dispatch("change", World.POSITION, this);
         },
 
         rotate: function(rx, ry, rz){
             this.rx = rx;
             this.ry = ry;
             this.rz = rz;
-            if(this.parent){
-                this.parent.change(World.ROTATION, this);
-            }
+            this.dispatch("change", World.ROTATION, this);
         },
 
         scale: function(sx, sy, sz){
             this.sx = sx;
             this.sy = sy;
             this.sz = sz;
-            if(this.parent){
-                this.parent.change(World.SCALE, this);
-            }
+            this.dispatch("change", World.SCALE, this);
         }
     }
 });

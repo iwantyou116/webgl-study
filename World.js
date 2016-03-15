@@ -105,11 +105,7 @@ var World = (function() {
                 scale: [],
                 rotation: [],
                 color: []
-            },
-            POSITION: 'position',
-            SCALE: 'scale',
-            ROTATION: 'rotation',
-            COLOR: 'color'
+            }
         },
 
         constants: {
@@ -124,6 +120,18 @@ var World = (function() {
             var gl = this.gl = this.canvas.getContext("webgl");
             this.context = glInit(gl);
             this.backgroundColor(1,1,1,1);
+
+            this.addEvent("change", function(type, mesh) {
+                switch (type) {
+                    case World.POSITION:
+                    case World.SCALE:
+                    case World.ROTATION:
+                    case World.COLOR:
+                    break;
+                    default: throw "invalid type";
+                }
+                this.changed[type.name].push(mesh);
+            });
         },
 
         methods: {
@@ -174,8 +182,8 @@ var World = (function() {
                 this.children.splice(this.children.indexOf(mesh),1);
                 this.vertexChanged = true;
                 
-                this.vertex_data = this.uv_data = this.index_data = 0;
-                this.position_data = this.scale_data = this.rotation_data = this.color_data = 0;
+                this.vertex_data.length = this.uv_data.length = this.index_data.length = 0;
+                this.position_data.length = this.scale_data.length = this.rotation_data.length = this.color_data.length = 0;
                 
                 this.children.forEach(this._addMeshData, this);
             },
@@ -197,15 +205,6 @@ var World = (function() {
                     this.rotation_data.push(mesh.rx, mesh.ry, mesh.rz);
                     this.color_data.push(mesh.material.r, mesh.material.g, mesh.material.b);
                 }
-            },
-
-            change: function(type, mesh) {
-                switch (type) {
-                    case World.POSITION:case World.SCALE:case World.ROTATION:case World.COLOR:
-                    break;
-                    default: throw "invalid type";
-                }
-                this.changed[type.name].push(mesh);
             },
 
             render: function() {

@@ -20,9 +20,7 @@ var Definer = (function() {
 
     var _constant = function(value) {
         var result = {};
-
         result.value = value;
-        console.log(result);
         return result;
     };
 

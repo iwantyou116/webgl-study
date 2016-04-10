@@ -25,7 +25,12 @@
         world.setViewport(true);
 
         var geo1 = [
-            [-1.0, 1.0, 0.0, -1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 1.0, -1.0, 0.0],
+            [
+                -1.0, 1.0, 0.0,
+                -1.0, -1.0, 0.0,
+                1.0, 1.0, 0.0,
+                1.0, -1.0, 0.0
+            ],
             [0, 1, 2, 1, 2, 3],
             [0,0,0,  0,1,0,  1,0,0,  1,1,0]
         ];
@@ -37,29 +42,33 @@
             var r2 = Math.random();
             mat1 = new Material([r0, r1, r2]);
             meshes.push(new Mesh(geo1[0], geo1[1], geo1[2], mat1));
-            meshes[i].setTranslate(r0 * 2 - 1, r1 * 2 - 1, r2 * 2 - 1);
+            meshes[i].setTranslate(r1 * 2 - 1, r1 * 2 - 1, r2 * 2 - 1);
             meshes[i].setScale(0.1, 0.1, 0.1);
             world.addMesh(meshes[i]);
         }
 
         requestAnimationFrame(function ani(){
-            var mesh, i;
-            for(i = 0; i < totalCount; i++) {
-                if(mesh = meshes[i]) {
-                    mesh.setRotate(mesh.rx, mesh.ry, mesh.rz + Math.random())
-                }
-            }
+
+            meshes[3].setVertices([
+                Math.random(), 1.0, 0.0,
+                -1.0, -1.0, 0.0,
+                1.0, 1.0, 0.0,
+                1.0, -1.0, 0.0
+            ]);
+
+            meshes[2].setVertices([
+                Math.random(), 1.0, 0.0,
+                -1.0, -1.0, 0.0,
+                1.0, 1.0, 0.0,
+                1.0, -1.0, 0.0
+            ]);
 
 
             world.render();
             requestAnimationFrame(ani);
         });
 
-        /*setInterval(function() {
-            world.removeMesh(meshes.pop());
-        }, 1000);*/
-
-    }(1000));
+    }(5));
 </script>
 </body>
 </html>

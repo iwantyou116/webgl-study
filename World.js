@@ -52,9 +52,9 @@ var World = (function() {
         '}'
     ;
 
-    var glInit = function (gl) {
+    var glInit = function (gl, world) {
         var vertexShader, fragmentShader, program, result,
-            key, i;
+            keys1, keys2, i;
 
         vertexShader = gl.createShader(gl.VERTEX_SHADER);
         gl.shaderSource(vertexShader, vertextShaderSource);
@@ -71,10 +71,14 @@ var World = (function() {
         gl.useProgram(program);
 
         result = { };
-        key = "aVertexPosition,aPosition,aScale,aRotation,aColor,aUV".split(",");
-        i = key.length;
+        keys1 = "vertex,position,scale,color,rotation,uv".split(",");
+        keys2 = "aVertexPosition,aPosition,aScale,aColor,aRotation,aUV".split(",");
+        i = keys2.length;
         while (i--) {
-            gl.enableVertexAttribArray(result[key[i]] = gl.getAttribLocation(program, key[i]));
+            gl.enableVertexAttribArray(result[keys2[i]] = gl.getAttribLocation(program, keys2[i]));
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, world[ keys1[i] + "Buffer"] = gl.createBuffer(gl.ARRAY_BUFFER));
+            gl.vertexAttribPointer(result[keys2[i]], 3, gl.FLOAT, false, 0, 0);
         }
         result["uSampler"] = gl.getUniformLocation(program, "uSampler");
 
@@ -92,23 +96,25 @@ var World = (function() {
             canvas: null,
             context: null,
             children: [],
-            vertex_data: [],
-            index_data: [],
-            position_data: [],
-            scale_data: [],
-            rotation_data: [],
-            color_data: [],
-            uv_data: [],
-            vertexChanged: true,
-            changed: {
-                position: [],
-                scale: [],
-                rotation: [],
-                color: []
-            }
+
+            _vertexBuffer: [],
+            _uvBuffer: [],
+            _indexBuffer: [],
+
+            _positionBuffer: [],
+            _scaleBuffer: [],
+            _rotationBuffer: [],
+            _colorBuffer: [],
+
+            isVertexChanged: false,
+            isPositionChanged: false,
+            isScaleChanged: false,
+            isRotationChanged: false,
+            isColorChanged: false
         },
 
         constants: {
+            "VERTEX": { name:"vertex" },
             "POSITION": { name:"position" },
             "SCALE": { name:"scale" },
             "ROTATION": { name:"rotation" },
@@ -116,13 +122,15 @@ var World = (function() {
         },
 
         initialize: function(canvas) {
+            var gl = this.gl = canvas.getContext("webgl");
             this.canvas = canvas;
-            var gl = this.gl = this.canvas.getContext("webgl");
-            this.context = glInit(gl);
+            this.context = glInit(gl, this);
             this.backgroundColor(1,1,1,1);
+            var that = this;
 
             this.addEvent("change", function(type, mesh) {
                 switch (type) {
+                    case World.VERTEX:
                     case World.POSITION:
                     case World.SCALE:
                     case World.ROTATION:
@@ -130,7 +138,7 @@ var World = (function() {
                     break;
                     default: throw "invalid type";
                 }
-                this.changed[type.name].push(mesh);
+                that._updateBuffer(mesh, type);
             });
         },
 
@@ -171,88 +179,106 @@ var World = (function() {
             addMesh: function(mesh) {
                 mesh.parent = this;
                 this.children.push(mesh);
-                this.vertexChanged = true;
+                this.isVertexChanged = true;
 
-                this._addMeshData(mesh);
+                this._addBuffer(mesh);
             },
 
-            removeMesh: function(mesh) {
-                if (this !== mesh.parent || this.children.indexOf(mesh) == -1) return;
-                mesh.parent = null;
-                this.children.splice(this.children.indexOf(mesh),1);
-                this.vertexChanged = true;
-                
-                this.vertex_data.length = this.uv_data.length = this.index_data.length = 0;
-                this.position_data.length = this.scale_data.length = this.rotation_data.length = this.color_data.length = 0;
-                
+            removeMesh: function() {
+
+            },
+
+            _resetBuffer: function() {
+                this._vertexBuffer.length = this._uvBuffer.length = this._indexBuffer.length = 0;
+                this._positionBuffer.length = this._scaleBuffer.length = this._rotationBuffer.length = this._colorBuffer.length = 0;
+
                 this.children.forEach(this._addMeshData, this);
             },
 
-            _addMeshData: function(mesh) {
+            _addBuffer: function(mesh) {
                 var i, length, length2;
 
-                mesh.offset = length = this.vertex_data.length / 3;
+                mesh.offset = length = this._vertexBuffer.length / 3;
                 for(i = 0, length2 = mesh.indices.length; i < length2; i++) {
-                    this.index_data.push(mesh.indices[i] + length);
+                    this._indexBuffer.push(mesh.indices[i] + length);
                 }
                 for (i = 0, length2 = mesh.vertices.length ; i < length2 ; i++) {
-                    this.vertex_data.push(mesh.vertices[i]);
-                    this.uv_data.push(mesh.uv[i]);
+                    this._vertexBuffer.push(mesh.vertices[i]);
+                    this._uvBuffer.push(mesh.uv[i]);
                 }
                 for(i = 0, length2 = mesh.vertices.length / 3; i < length2; i++){
-                    this.position_data.push(mesh.px, mesh.py, mesh.pz);
-                    this.scale_data.push(mesh.sx, mesh.sy, mesh.sz);
-                    this.rotation_data.push(mesh.rx, mesh.ry, mesh.rz);
-                    this.color_data.push(mesh.material.r, mesh.material.g, mesh.material.b);
+                    this._positionBuffer.push(mesh.px, mesh.py, mesh.pz);
+                    this._scaleBuffer.push(mesh.sx, mesh.sy, mesh.sz);
+                    this._rotationBuffer.push(mesh.rx, mesh.ry, mesh.rz);
+                    this._colorBuffer.push(mesh.material.r, mesh.material.g, mesh.material.b);
                 }
             },
 
-            render: function() {
-                var gl = this.gl;
-                var mesh, i, j, k, len, len2, len3, keys, keys2;
+            _updateBuffer: function(mesh, type) {
+                var index = this.children.indexOf(mesh);
+                var offset = mesh.offset;
+                var i, j, k, l;
 
-                if(this.vertexChanged){
-                    this.vertexChanged = false;
-                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer(gl.ELEMENT_ARRAY_BUFFER));
-                    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.index_data), gl.STATIC_DRAW);
+                if(type === World.VERTEX) {
+                    this.isVertexChanged = true;
 
-                    keys = "vertex,position,scale,color,rotation,uv".split(",");
-                    keys2 = "aVertexPosition,aPosition,aScale,aColor,aRotation,aUV".split(",");
-                    i = keys.length;
-                    while(i--) {
-                        gl.bindBuffer(gl.ARRAY_BUFFER, this[keys[i]+"Buffer"] = gl.createBuffer(gl.ARRAY_BUFFER));
-                        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this[keys[i]+"_data"]), gl.STATIC_DRAW);
-                        gl.vertexAttribPointer(this.context[keys2[i]], 3, gl.FLOAT, false, 0, 0);
+                    i = 0;
+                    j = mesh.vertices.length;
+                    k = index * j;
+                    for(; i < j; i++, k++) {
+                        this._vertexBuffer[k] = mesh.vertices[i];
+                        this._uvBuffer[k] = mesh.uv[i];
                     }
-                    gl.uniform1i(this.context.uSampler, 0);
-                } else {
-                    keys = "position,scale,rotation,color".split(",");
-                    keys2 = "px,py,pz|sx,sy,sz|rx,ry,rz|r,g,b".split("|");
+                }else {
+                    var keys = "position,scale,rotation,color".split(",");
+                    var keys2 = "px,py,pz|sx,sy,sz|rx,ry,rz|r,g,b".split("|");
                     keys2.forEach(function(v, i){
                         keys2[i] = v.split(",");
                     });
 
                     i = keys.length;
                     while (i--) {
-                        if (!(j = this.changed[keys[i]].length)) continue;
-                        var target = this[keys[i]+"_data"];
-                        while (j--) {
-                            mesh = this.changed[keys[i]][j];
-                            var offset = mesh.offset;
-                            for(k = 0, len2 = mesh.vertices.length / 3; k < len2; k++){
-                                target[3 * (offset + k)] = mesh[keys2[i][0]];
-                                target[3 * (offset + k) + 1] = mesh[keys2[i][1]];
-                                target[3 * (offset + k) + 2] = mesh[keys2[i][2]];
-                            }
+                        var target = this['_' + keys[i] + "Buffer"];
+                        for(k = 0, l = mesh.vertices.length / 3; k < l; k++){
+                            target[3 * (offset + k)] = mesh[keys2[i][0]];
+                            target[3 * (offset + k) + 1] = mesh[keys2[i][1]];
+                            target[3 * (offset + k) + 2] = mesh[keys2[i][2]];
                         }
-                        gl.bindBuffer(gl.ARRAY_BUFFER, this[keys[i]+"Buffer"]);
-                        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this[keys[i]+"_data"]), gl.STATIC_DRAW);
-                        this.changed[keys[i]].length = 0;
                     }
                 }
 
+
+            },
+
+            render: function() {
+                var gl = this.gl;
+                var i, keys, key;
+
+                if(this.isVertexChanged) {
+                    this.isVertexChanged = false;
+                    
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer(gl.ELEMENT_ARRAY_BUFFER));
+                    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this._indexBuffer), gl.STATIC_DRAW);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._vertexBuffer), gl.STATIC_DRAW);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuffer);
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._uvBuffer), gl.STATIC_DRAW);
+
+                    gl.uniform1i(this.context.uSampler, 0);
+                }
+
+                keys = "position,scale,rotation,color".split(",");
+                i = keys.length;
+                while (i--) {
+                    key = keys[i];
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this[key+"Buffer"]);
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this['_' + key+"Buffer"]), gl.STATIC_DRAW);
+                }
+                
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                gl.drawElements(gl.TRIANGLES, this.index_data.length, gl.UNSIGNED_SHORT, 0);
+                gl.drawElements(gl.TRIANGLES, this._indexBuffer.length, gl.UNSIGNED_SHORT, 0);
             }
         }
     });

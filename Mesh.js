@@ -14,8 +14,7 @@ var Mesh = Definer.extend({
         rz: 0,
         sx: 1,
         sy: 1,
-        sz: 1,
-        parent: null
+        sz: 1
     },
 
     initialize: function(vertices, indices, uv, material) {
@@ -27,21 +26,26 @@ var Mesh = Definer.extend({
 
     methods: {
 
-        translate: function(px, py, pz){
+        setVertices: function(vertices) {
+            this.vertices = vertices;
+            this.dispatch('change', World.VERTEX, this);
+        },
+
+        setTranslate: function(px, py, pz){
             this.px = px;
             this.py = py;
             this.pz = pz;
             this.dispatch("change", World.POSITION, this);
         },
 
-        rotate: function(rx, ry, rz){
+        setRotate: function(rx, ry, rz){
             this.rx = rx;
             this.ry = ry;
             this.rz = rz;
             this.dispatch("change", World.ROTATION, this);
         },
 
-        scale: function(sx, sy, sz){
+        setScale: function(sx, sy, sz){
             this.sx = sx;
             this.sy = sy;
             this.sz = sz;

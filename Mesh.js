@@ -14,7 +14,10 @@ var Mesh = Definer.extend({
         rz: 0,
         sx: 1,
         sy: 1,
-        sz: 1
+        sz: 1,
+        r: 0,
+        g: 0,
+        b: 0
     },
 
     initialize: function(vertices, indices, uv, material) {
@@ -22,6 +25,11 @@ var Mesh = Definer.extend({
         this.indices = indices;
         this.uv = uv;
         this.material = material;
+
+        this.r = material.r;
+        this.g = material.g;
+        this.b = material.b;
+        this.dispatch('change', World.COLOR, this);
     },
 
     methods: {

@@ -1,6 +1,7 @@
 var World = (function() {
 
     var vertextShaderSource =
+        'uniform vec2 uResolution;' +
         'attribute vec3 aVertexPosition;' +
         'attribute vec3 aPosition;' +
         'attribute vec3 aScale;' +
@@ -30,10 +31,12 @@ var World = (function() {
         'void main(void){' +
         '   vColor = aColor;' +
         '   vUV = aUV;' +
+        '   vec2 aVertexPosition2 = vec2(aVertexPosition[0], aVertexPosition[1]);' +
+        '   vec2 clipSpace = ((aVertexPosition2 / uResolution) * 2.0) - 1.0;' +
         '   gl_Position = positionMTX(aPosition)*' +
         '   rotationMTX(aRotation)*' +
         '   scaleMTX(aScale)*' +
-        '   vec4(aVertexPosition, 1.0);' +
+        '   vec4(clipSpace * vec2(1, -1), 0, 1.0);' +
         '}'
     ;
 
@@ -81,6 +84,7 @@ var World = (function() {
             gl.vertexAttribPointer(result[keys2[i]], 3, gl.FLOAT, false, 0, 0);
         }
         result["uSampler"] = gl.getUniformLocation(program, "uSampler");
+        result["uResolution"] = gl.getUniformLocation(program, "uResolution");
 
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -267,6 +271,7 @@ var World = (function() {
                     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._uvBuffer), gl.STATIC_DRAW);
 
                     gl.uniform1i(this.context.uSampler, 0);
+                    gl.uniform2f(this.context.uResolution, this.canvas.width, this.canvas.height);
                 }
 
                 keys = "position,scale,rotation,color".split(",");

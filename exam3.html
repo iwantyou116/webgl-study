@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <style>
+        html,body { padding:0; margin:0; height:100% }
+        img  { margin:0; padding:0; border:0 }
+    </style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<script type="application/javascript" src="Definer.js"></script>
+<script type="application/javascript" src="Material.js"></script>
+<script type="application/javascript" src="Mesh.js"></script>
+<script type="application/javascript" src="World.js"></script>
+<script>
+
+
+
+    (function(totalCount){
+        var cv = document.getElementById('stage');
+
+        var world = new World(cv);
+
+        world.setViewport(false, 500, 500);
+
+        var x = 30;
+        var y = 30;
+        var width = 100;
+        var height = 100;
+
+        var x1 = x;
+        var y1 = y;
+        var x2 = x1 + width;
+        var y2 = y1 + height;
+
+        var geo1 = [
+            [
+                x1, y1, 0.0,
+                x1, y2, 0.0,
+                x2, y1, 0.0,
+                x2, y2, 0.0
+            ],
+            [0, 1, 2, 1, 2, 3],
+            [0,0,0,  0,1,0,  1,0,0,  1,1,0]
+        ];
+        var meshes = [], mat1;
+
+        for(var i = 0; i < totalCount; i++) {
+            var r0 = Math.random();
+            var r1 = Math.random();
+            var r2 = Math.random();
+            mat1 = new Material([r0, r1, r2]);
+            meshes.push(new Mesh(geo1[0], geo1[1], geo1[2], mat1));
+            world.addMesh(meshes[i]);
+        }
+
+        world.render();
+
+
+    }(1));
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+

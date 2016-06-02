@@ -12,6 +12,7 @@
 <script type="application/javascript" src="Definer.js"></script>
 <script type="application/javascript" src="Material.js"></script>
 <script type="application/javascript" src="Mesh.js"></script>
+<script type="application/javascript" src="Shader.js"></script>
 <script type="application/javascript" src="World.js"></script>
 <script>
 
@@ -20,7 +21,7 @@
     (function(totalCount){
         var cv = document.getElementById('stage');
 
-        var world = new World(cv);
+        var world = new World(cv, true);
 
         world.setViewport(false, 500, 500);
 

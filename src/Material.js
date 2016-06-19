@@ -5,7 +5,7 @@ var Material = Definer.extend({
     initialize: function(color) {
         this.color = color;
 
-        if(typeof this.color == "string"){
+        if(typeof this.color == 'string'){
             this.r = parseInt(this.color.substr(1,2), 16)/255;
             this.g = parseInt(this.color.substr(3,2), 16)/255;
             this.b = parseInt(this.color.substr(5,2), 16)/255;

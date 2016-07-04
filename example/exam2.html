@@ -9,11 +9,11 @@
 </head>
 <body>
 <canvas id="stage"></canvas>
-<script type="application/javascript" src="src/Definer.js"></script>
-<script type="application/javascript" src="src/Material.js"></script>
-<script type="application/javascript" src="src/Mesh.js"></script>
-<script type="application/javascript" src="src/Shader.js"></script>
-<script type="application/javascript" src="src/World.js"></script>
+<script type="application/javascript" src="../src/Definer.js"></script>
+<script type="application/javascript" src="../src/Material.js"></script>
+<script type="application/javascript" src="../src/Mesh.js"></script>
+<script type="application/javascript" src="../src/Shader.js"></script>
+<script type="application/javascript" src="../src/World.js"></script>
 <script>
 
 
@@ -43,7 +43,7 @@
             var r2 = Math.random();
             mat1 = new Material([r0, r1, r2]);
             meshes.push(new Mesh(geo1[0], geo1[1], geo1[2], mat1));
-            meshes[i].setTranslate(r1 * 2 - 1, r1 * 2 - 1, r2 * 2 - 1);
+            meshes[i].setPosition(r1 * 2 - 1, r1 * 2 - 1, r2 * 2 - 1);
             meshes[i].setScale(0.1, 0.1, 0.1);
             world.addMesh(meshes[i]);
         }

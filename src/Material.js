@@ -1,9 +1,20 @@
 var Material = Definer.extend({
 
     name: 'Material',
+    
+    constant: {
+        'updated': { name: 'Material.updated' }
+    },
 
-    initialize: function(color) {
+    initialize: function(color, texture) {
+        var that = this;
         this.color = color;
+        this.texture = texture;
+        if(this.texture) {
+            this.texture.addEvent(Texture.loaded, function() {
+                that.dispatch(Material.updated)
+            });
+        }
 
         if(typeof this.color == 'string'){
             this.r = parseInt(this.color.substr(1,2), 16)/255;

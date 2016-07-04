@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<style>
+    html,body { padding:0; margin:0; height:100% }
+    img  { margin:0; padding:0; border:0 }
+</style>
+<script type="application/javascript" src="dat.gui.js"></script>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<script type="application/javascript" src="../src/Definer.js"></script>
+<script type="application/javascript" src="../src/Material.js"></script>
+<script type="application/javascript" src="../src/Mesh.js"></script>
+<script type="application/javascript" src="../src/Shader.js"></script>
+<script type="application/javascript" src="../src/World.js"></script>
+<script>
+    function Example(){
+        var cv = document.getElementById('stage');
+        this.totalCount = 10;
+
+        this.world = new World(cv);
+
+        this.world.setViewport(false, 1000, 1000);
+
+        this.geo1 = [
+            [-1.0, 1.0, 0.0, -1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 1.0, -1.0, 0.0],
+            [0, 1, 2, 1, 2, 3],
+            [0,0,0,  0,1,0,  1,0,0,  1,1,0]
+        ];
+        this.meshes = [];
+    }
+    Example.prototype.reset = function() {
+        this.world.resetMeshes();
+    }
+    Example.prototype.render = function() {
+        var that = this;
+
+        for(var i = 0; i < this.totalCount; i++) {
+            var r0 = Math.random();
+            var r1 = Math.random();
+            var r2 = Math.random();
+            var mat1 = new Material([r0, r1, r2]);
+            this.meshes.push(new Mesh(this.geo1[0], this.geo1[1], this.geo1[2], mat1));
+            this.meshes[i].setPosition(r0 * 2 - 1, r1 * 2 - 1, r2 * 2 - 1);
+            this.meshes[i].setScale(0.1, 0.1, 0.1);
+            this.world.addMesh(this.meshes[i]);
+        }
+
+
+        requestAnimationFrame(function ani(){
+            var mesh, i;
+            for(i = 0; i < that.totalCount; i++) {
+                if(mesh = that.meshes[i]) {
+                    mesh.setRotate(mesh.rx, mesh.ry, mesh.rz + Math.random())
+                }
+            }
+
+
+            that.world.render();
+            requestAnimationFrame(ani);
+        });
+    }
+
+
+
+
+
+
+    var controller, exam;
+    window.onload = function() {
+        var gui = new dat.GUI();
+        exam = new Example();
+        exam.render();
+        controller = gui.add(exam, 'totalCount', 0, 1000);
+        controller.onFinishChange(function(value) {
+            exam.reset();
+            exam.render();
+        });
+    };
+
+
+
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+

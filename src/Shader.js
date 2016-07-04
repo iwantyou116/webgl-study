@@ -55,7 +55,6 @@ var Shader = Definer.extend({
             '   }else{' +
             '       gl_FragColor = vec4(vColor, 1.0);' +
             '   }' +
-            '   gl_FragColor.a = 0.75;' +
             '}'
         ]
     },

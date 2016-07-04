@@ -39,7 +39,7 @@ var Mesh = Definer.extend({
             this.dispatch('change', World.VERTEX, this);
         },
 
-        setTranslate: function(px, py, pz){
+        setPosition: function(px, py, pz){
             this.px = px;
             this.py = py;
             this.pz = pz;

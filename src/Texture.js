@@ -7,16 +7,18 @@ var Texture = Definer.extend({
     },
     
     constant: {
-        'loaded': { name:'Texture.loaded' }
+        'loaded': 'Texture.loaded'
     },
 
     initialize: function(el) {
         var that = this;
         switch (el.tagName.toLowerCase()) {
             case 'img':
-                if (el.complete) this.img = el;
+                if (el.complete) {
+                    this.img = el;
+                    this.dispatch(Texture.loaded);
+                }
                 else {
-                    //this.img = blank;
                     el.onload = function() {
                         that.img = this;
                         that.dispatch(Texture.loaded);

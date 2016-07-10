@@ -33,15 +33,15 @@ var Definer = (function() {
                     Object.defineProperty(this, v, _property(properties[v]));
                 }, this);
             }
+            if(constants = options.constants) {
+                Object.getOwnPropertyNames(constants).forEach(function(v){
+                    Object.defineProperty(cls, v, _constant(constants[v]));
+                });
+            }
 
             options.initialize.apply(this, Array.prototype.slice.call(arguments));
         };
 
-        if(constants = options.constants) {
-            Object.getOwnPropertyNames(constants).forEach(function(v){
-                Object.defineProperty(cls, v, _constant(constants[v]));
-            });
-        }
         if(methods = options.methods) {
             Object.getOwnPropertyNames(methods).forEach(function(v){
                 Object.defineProperty(cls.prototype, v, {value: methods[v]});
@@ -50,12 +50,13 @@ var Definer = (function() {
 
         Object.defineProperty(cls.prototype, 'toString', { value: function() { return this.uuid; }});
         Object.defineProperty(cls.prototype, 'addEvent', {
-            value: function(type, listener) {
+            value: function(type, isGlobal, listener) {
                 listeners[type] = listeners[type] || [];
                 if(listeners[type].indexOf(listener) == -1) {
                     listeners[type].push({
                         f: listener,
-                        ctx: this
+                        ctx: this,
+                        isGlobal: isGlobal
                     });
                 }
             }
@@ -68,8 +69,16 @@ var Definer = (function() {
                     params = Array.prototype.slice.call(arguments, 1);
 
                 while (i--) {
-                    evt[i].f.apply(evt[i].ctx, params);
+                    if(evt[i].ctx === this || evt[i].isGlobal)
+                        evt[i].f.apply(evt[i].ctx, params);
                 }
+            }
+        });
+        
+        Object.defineProperty(cls.prototype, 'destroy', {
+            value: function() {
+                if(options.destroy) options.destroy();
+                delete allInstance[this.uuid];
             }
         });
 

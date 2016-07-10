@@ -18,8 +18,10 @@
 <script>
 
     var img = new Image();
-    img.src = '../img/water.jpg';
-    img.onload = function() { start(); }
+    img.src = '../img/wicker_256.jpg';
+
+    var img2 = new Image();
+    img2.src = '../img/wood_128x128.jpg';
 
 
     function start(){
@@ -47,6 +49,21 @@
             world.addMesh(meshes[i]);
         }
 
+        var t0 = 0;
+        var t1 = 0;
+        var t2 = 0;
+        var mesh;
+        mat1 = new Material([0.23, 0.43, 0.321]);
+        meshes.push(mesh = new Mesh(geo1[0], geo1[1], geo1[2], mat1));
+        mesh.setPosition(t0, t1, t2);
+        mesh.setScale(0.3, 0.3, 0.3);
+        world.addMesh(meshes[i]);
+
+        meshes.push(mesh = new Mesh(geo1[0], geo1[1], geo1[2], new Material(null, new Texture(img2))));
+        mesh.setPosition(0.5, 0.5, 0);
+        mesh.setScale(0.3, 0.3, 0.3);
+        world.addMesh(meshes[i]);
+
         requestAnimationFrame(function ani(){
             var mesh, i;
             for(i = 0; i < 1; i++) {
@@ -59,12 +76,9 @@
             world.render();
             requestAnimationFrame(ani);
         });
+    }
 
-        /*setInterval(function() {
-            world.removeMesh(meshes.pop());
-        }, 1000);*/
-
-    };
+    start();
 </script>
 </body>
 </html>

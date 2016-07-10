@@ -11,8 +11,8 @@ var Material = Definer.extend({
         this.color = color;
         this.texture = texture;
         if(this.texture) {
-            this.texture.addEvent(Texture.loaded, function() {
-                that.dispatch(Material.updated)
+            this.texture.addEvent(Texture.loaded, false, function() {
+                that.dispatch('Material.updated')
             });
         }
 

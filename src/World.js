@@ -28,7 +28,8 @@ var World = Definer.extend({
         'POSITION': { name: 'position', properties: ['px', 'py', 'pz'] },
         'SCALE': { name: 'scale', properties: ['sx', 'sy', 'sz'] },
         'ROTATION': { name: 'rotation', properties: ['rx', 'ry', 'rz'] },
-        'COLOR': { name: 'color', properties: ['r', 'g', 'b'] }
+        'COLOR': { name: 'color', properties: ['r', 'g', 'b'] },
+        'TEXTURE': { name: 'texture' }
     },
 
     initialize: function(canvas, isClipSpace) {
@@ -39,20 +40,21 @@ var World = Definer.extend({
         this.backgroundColor(1,1,1,1);
         var that = this;
 
-        this.addEvent('change', function(type, mesh) {
+        this.addEvent('change', true, function(type, mesh) {
             switch (type) {
                 case World.VERTEX:
                 case World.POSITION:
                 case World.SCALE:
                 case World.ROTATION:
                 case World.COLOR:
-                break;
+                    that._updateBuffer(mesh, type);
+                    break;
+                case World.TEXTURE:
+                    that._updateTexture(mesh);
+                    break;
                 default: throw 'invalid type';
             }
-            that._updateBuffer(mesh, type);
         });
-        
-        this.addEvent('')
     },
 
     methods: {
@@ -158,6 +160,10 @@ var World = Definer.extend({
         resetMeshes: function() {
             this._vertexBuffer.length = this._uvBuffer.length = this._indexBuffer.length = 0;
             this._positionBuffer.length = this._scaleBuffer.length = this._rotationBuffer.length = this._colorBuffer.length = 0;
+
+            this.children.forEach(function(v) {
+                v.destroy();
+            });
             this.children.length = 0;
         },
 
@@ -171,7 +177,6 @@ var World = Definer.extend({
         _addBuffer: function(mesh) {
             var i, length, length2;
 
-            this._updateTexture(mesh);
             mesh.offset = length = this._vertexBuffer.length / 3;
             for(i = 0, length2 = mesh.indices.length; i < length2; i++) {
                 this._indexBuffer.push(mesh.indices[i] + length);
@@ -192,10 +197,8 @@ var World = Definer.extend({
             var index = this.children.indexOf(mesh);
             var offset = mesh.offset;
             var i, j, k, l;
-
             if(type === World.VERTEX) {
                 this.isVertexChanged = true;
-                this._updateTexture(mesh);
                 i = 0;
                 j = mesh.vertices.length;
                 k = index * j;
@@ -215,15 +218,22 @@ var World = Definer.extend({
 
         _updateTexture: function(mesh) {
             //todo multiple texture
-            if(!mesh.material.texture) return this._texImage = null;
-            var canvas = this._texImage = document.createElement('canvas'),
-                img = mesh.material.texture.img,
+            var canvas, context, img, width, height;
+            if(!mesh.material.texture) return;
+            if(this._texImage) {
+                canvas = this._texImage;
+                context = canvas.getContext('2d');
+                img = mesh.material.texture.img;
+                context.drawImage(img, canvas.width / 2, 0, img.width, img.height);
+            } else {
+                canvas = this._texImage = document.createElement('canvas');
+                img = mesh.material.texture.img;
                 context = canvas.getContext('2d');
 
-            canvas.width = img.width;
-            canvas.height = img.height;
-            context.clearRect(0, 0, canvas.width, canvas.height);
-            context.drawImage(img, 0, 0);
+                canvas.width = 1024;
+                canvas.height = 1024;
+                context.drawImage(img, 0, 0);
+            }
         },
 
         render: function() {
@@ -232,14 +242,6 @@ var World = Definer.extend({
 
             if(this.isVertexChanged) {
                 this.isVertexChanged = false;
-
-                if(this._texImage){
-                    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._texImage);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-                    gl.generateMipmap(gl.TEXTURE_2D);
-                }
 
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer(gl.ELEMENT_ARRAY_BUFFER));
                 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this._indexBuffer), gl.STATIC_DRAW);
@@ -250,9 +252,18 @@ var World = Definer.extend({
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuffer);
                 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._uvBuffer), gl.STATIC_DRAW);
 
-                gl.uniform1i(this.context.uSampler, 0);
                 if(this.isClipSpace) gl.uniform2f(this.context.uResolution, this.canvas.width, this.canvas.height);
                 
+            }
+
+            if(this._texImage){
+                gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._texImage);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                gl.generateMipmap(gl.TEXTURE_2D);
+
+                gl.uniform1i(this.context.uSampler, 0);
             }
 
             keys = 'position,scale,rotation,color'.split(',');
